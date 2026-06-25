@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Quick deeper dive · Socially Soch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:        #2F1A0E;
+  --bg-card:   #3F2418;
+  --bg-card-2: #4A2C1E;
+  --border:    rgba(187,148,87,0.26);
+  --tan:       #BB9457;
+  --text:      #F5E5C4;
+  --text-soft: rgba(245,229,196,0.72);
+  --text-mute: rgba(245,229,196,0.45);
+  --burgundy:  #6F1D1B;
+  --burgundy-2:#8A2826;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{
+  max-width:640px;margin:0 auto;min-height:100vh;
+  display:flex;flex-direction:column;padding:24px 24px 32px;
+}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:8px 0 10px}
+.wordmark{font-weight:600;font-size:14px;letter-spacing:0.04em;color:var(--text)}
+.progress-text{font-size:12px;letter-spacing:0.06em;color:var(--text-mute)}
+.progress-bar{
+  position:relative;height:3px;background:rgba(187,148,87,0.18);
+  border-radius:2px;overflow:hidden;margin-bottom:28px;
+}
+.progress-bar .fill{
+  position:absolute;top:0;left:0;bottom:0;background:var(--tan);
+  width:0%;transition:width 0.4s ease;
+}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 0}
+.greeting{font-size:14px;color:var(--text-soft);margin-bottom:18px}
+.q-label{display:block;font-size:22px;font-weight:600;margin-bottom:10px;color:var(--text);line-height:1.35}
+.q-help{font-size:14px;color:var(--text-soft);margin-bottom:24px;line-height:1.55}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;cursor:pointer;display:flex;align-items:flex-start;gap:12px;
+  transition:border-color 0.15s, background 0.15s;
+}
+.opt:hover{border-color:var(--tan);background:var(--bg-card-2)}
+.opt.selected{border-color:var(--tan);background:rgba(187,148,87,0.10)}
+.opt .mark{
+  width:16px;height:16px;border-radius:50%;border:1px solid var(--border);
+  flex-shrink:0;margin-top:2px;transition:all 0.15s;
+}
+.opt.selected .mark{
+  border-color:var(--tan);background:var(--tan);
+  box-shadow:inset 0 0 0 3px var(--bg-card);
+}
+.opt .text{font-size:14px;color:var(--text);line-height:1.4;flex:1}
+.opt .text .sub{display:block;font-size:12px;color:var(--text-mute);margin-top:3px}
+
+.text-input,
+.text-area,
+.other-input{
+  width:100%;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:8px;padding:12px 14px;color:var(--text);
+  font-family:inherit;font-size:14px;
+}
+.other-input{margin-top:8px}
+.text-area{min-height:120px;resize:vertical;line-height:1.55}
+.text-input:focus,.text-area:focus,.other-input:focus{outline:none;border-color:var(--tan)}
+.text-input::placeholder,.text-area::placeholder,.other-input::placeholder{color:var(--text-mute)}
+.other-input.hidden{display:none}
+
+.navrow{
+  display:flex;justify-content:space-between;align-items:center;
+  padding-top:24px;margin-top:24px;border-top:1px solid var(--border);
+}
+.back{
+  background:none;border:none;color:var(--text-mute);
+  font-family:inherit;font-size:14px;cursor:pointer;padding:6px 0;
+}
+.back:hover{color:var(--text)}
+.back:disabled{opacity:0.4;cursor:not-allowed}
+.next{
+  background:var(--burgundy);color:var(--text);border:none;border-radius:6px;
+  padding:10px 24px;font-family:inherit;font-size:14px;font-weight:500;
+  cursor:pointer;transition:background 0.15s;
+}
+.next:hover{background:var(--burgundy-2)}
+.next:disabled{background:var(--bg-card);color:var(--text-mute);cursor:not-allowed}
+
+.center{flex:1;display:flex;flex-direction:column;justify-content:center}
+.center h1{font-size:26px;font-weight:600;margin-bottom:10px}
+.center p{color:var(--text-soft);margin-bottom:20px}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:13px;color:var(--text-soft);margin-bottom:6px}
+.field input{
+  width:100%;background:var(--bg-card);border:1px solid var(--border);
+  border-radius:6px;padding:10px 12px;color:var(--text);
+  font-family:inherit;font-size:14px;
+}
+.field input:focus{outline:none;border-color:var(--tan)}
+
+@media (max-width:560px){
+  .q-label{font-size:20px}
+  .center h1{font-size:22px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="wordmark">Socially Soch</div>
+    <div class="progress-text" id="progressText"></div>
+  </div>
+  <div class="progress-bar" id="progressBar">
+    <div class="fill" id="progressFill" style="width:0%"></div>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <div class="navrow" id="navrow" style="display:none">
+    <button class="back" id="backBtn" type="button">Back</button>
+    <button class="next" id="nextBtn" type="button">Continue</button>
+  </div>
+
+</div>
+
+<script>
+const CONFIG = {
+  clientName: "Nitika",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbz2Hdiw6UIsTOvcwNov5lOqa8V0M3eHKZs1LD9d4ryj2pcsoBry2V6v2qPWlsWPTJ9c5Q/exec"
+};
+
+const OTHER = "__other__";
+
+const QUESTIONS = [
+  /* ============ I. YOUR BRAND ============ */
+  {
+    key: "designLanguage",
+    section: "Your brand",
+    label: "Your style in two words",
+    help: "Pick the two that fit you most. This sets the look of every post.",
+    type: "multi",
+    allowOther: true,
+    options: [
+      { v: "modernIndian", l: "Modern Indian" },
+      { v: "fusion",       l: "Indo-western fusion" },
+      { v: "occasion",     l: "Romantic and occasion" },
+      { v: "minimal",      l: "Minimal and quiet luxury" },
+      { v: "statement",    l: "Bold and statement" },
+      { v: "heritage",     l: "Heritage and craft-led" }
+    ]
+  },
+  {
+    key: "categories",
+    section: "Your brand",
+    label: "What kind of pieces do you make?",
+    help: "Pick everything you sell today.",
+    type: "multi",
+    allowOther: true,
+    options: [
+      { v: "bridal",      l: "Bridal lehengas and gowns" },
+      { v: "festive",     l: "Festive lehengas, sarees, suits" },
+      { v: "indoWestern", l: "Indo-western gowns and cocktail" },
+      { v: "western",     l: "Western dresses and separates" },
+      { v: "daily",       l: "Daily wear", sub: "Kurtis, co-ords" },
+      { v: "accessories", l: "Accessories", sub: "Clutches, dupattas, jewellery" }
+    ]
+  },
+  {
+    key: "priceRange",
+    section: "Your brand",
+    label: "Price range per piece",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "5-15",   l: "5K to 15K" },
+      { v: "15-50",  l: "15K to 50K" },
+      { v: "50-150", l: "50K to 1.5L" },
+      { v: "150+",   l: "1.5L and above" }
+    ]
+  },
+
+  /* ============ II. YOUR STORY ============ */
+  {
+    key: "hero",
+    section: "Your story",
+    label: "Your bestseller or signature piece",
+    help: "The one design that sells the most, or the one you are most proud of. This becomes your hero post.",
+    type: "text",
+    placeholder: "Describe it in one or two lines"
+  },
+  {
+    key: "foreignObservation",
+    section: "Your story",
+    label: "What do foreigners get wrong about Indian fashion?",
+    help: "A few examples you have actually seen. This becomes the story we tell on your page.",
+    type: "textarea",
+    placeholder: "Write what you have seen."
+  },
+  {
+    key: "modernAlternative",
+    section: "Your story",
+    label: "How would you describe your style in one line?",
+    help: "Imagine a customer abroad opens your page for the first time. What would you tell them in one sentence?",
+    type: "text",
+    placeholder: "One sentence"
+  },
+
+  /* ============ III. YOUR CUSTOMER ============ */
+  {
+    key: "targetCountries",
+    section: "Your customer",
+    label: "Which countries do you want to grow in?",
+    help: "Pick up to three. These decide where we run your ads and who we partner with.",
+    type: "multi",
+    allowOther: true,
+    options: [
+      { v: "usa",       l: "United States" },
+      { v: "uk",        l: "United Kingdom" },
+      { v: "uae",       l: "United Arab Emirates" },
+      { v: "canada",    l: "Canada" },
+      { v: "australia", l: "Australia" }
+    ]
+  },
+  {
+    key: "intlCustomer",
+    section: "Your customer",
+    label: "Who do you want to dress abroad?",
+    help: "This decides how the page speaks.",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "nri",        l: "NRI women in those countries" },
+      { v: "foreigners", l: "Foreign nationals attracted to Indian style" },
+      { v: "both",       l: "Both equally" },
+      { v: "figuring",   l: "Still figuring it out" }
+    ]
+  },
+  {
+    key: "intlClients",
+    section: "Your customer",
+    label: "How many international clients do you have today?",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "0",     l: "0" },
+      { v: "1-5",   l: "1 to 5" },
+      { v: "6-15",  l: "6 to 15" },
+      { v: "16+",   l: "16 or more" }
+    ]
+  },
+
+  /* ============ IV. YOUR CONTENT ============ */
+  {
+    key: "topics",
+    section: "Your content",
+    label: "What do you want to be known for talking about?",
+    help: "Pick everything you would enjoy making content on. These become your three or four content pillars.",
+    type: "multi",
+    allowOther: true,
+    options: [
+      { v: "styling",    l: "Modern styling of Indian wear" },
+      { v: "fabric",     l: "Indian fabric and textile stories" },
+      { v: "nri",        l: "NRI dressing for occasions abroad" },
+      { v: "daytonight", l: "Day to night styling" },
+      { v: "occasion",   l: "Bridal and occasion looks" },
+      { v: "bts",        l: "Behind the design", sub: "Sketches, choices, fittings" },
+      { v: "industry",   l: "Industry takes, designers and trends" },
+      { v: "slowFashion",l: "Slow fashion and conscious craft" },
+      { v: "global",     l: "Indian wear that travels well abroad" }
+    ]
+  },
+  {
+    key: "misconception",
+    section: "Your content",
+    label: "Something people get wrong about you that you want to clear up",
+    help: "Tell us in one line. For example: 'They think we only do bridal.' We turn this into a content angle.",
+    type: "text",
+    placeholder: "One line is enough"
+  },
+  {
+    key: "frequency",
+    section: "Your content",
+    label: "How often can you post without it feeling like a burden?",
+    help: "Be honest. We design the plan around what you can stick to.",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "1x",   l: "Once a week" },
+      { v: "2-3",  l: "Two to three times a week" },
+      { v: "4-5",  l: "Four to five times a week" },
+      { v: "daily",l: "Daily" },
+      { v: "tell", l: "Tell me what is realistic, I will commit to it" }
+    ]
+  },
+  {
+    key: "bestPost",
+    section: "Your content",
+    label: "Your best post so far",
+    help: "Paste the link or describe it in a line. We study what already works.",
+    type: "text",
+    placeholder: "Link or a one-line description"
+  },
+
+  /* ============ V. YOU ON CAMERA ============ */
+  {
+    key: "founderFace",
+    section: "You on camera",
+    label: "Are you the face of the brand?",
+    help: "Helps us decide how much of you we show on the page.",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "fully",     l: "Yes, fully", sub: "I show up on camera regularly" },
+      { v: "partly",    l: "Partly", sub: "I show some, not centre stage" },
+      { v: "pieces",    l: "No, my pieces are the face" },
+      { v: "wantMore",  l: "Want to be more visible, unsure how" }
+    ]
+  },
+  {
+    key: "cameraBlock",
+    section: "You on camera",
+    label: "What stops you from being on camera right now?",
+    help: "If something does. So we know how to work around it.",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "watching",  l: "Watching myself back" },
+      { v: "scripts",   l: "Scripts and what to say" },
+      { v: "lighting",  l: "Lighting and setup" },
+      { v: "time",      l: "Time" },
+      { v: "dislike",   l: "I just dislike posting" },
+      { v: "none",      l: "No block, just need a plan" }
+    ]
+  },
+
+  /* ============ VI. WORKING WITH US ============ */
+  {
+    key: "services",
+    section: "Working with us",
+    label: "What do you need from us most?",
+    help: "Your main goal is leads from Instagram, ideally international. We work as one senior team across strategy, content, shoots, ads, partnerships and PR. Tell us in your own words what you need first.",
+    type: "textarea",
+    placeholder: "Write here. As much detail as you want."
+  },
+  {
+    key: "startTimeline",
+    section: "Working with us",
+    label: "When should we start working together?",
+    help: "We ask so we can lock your content shoot dates, the page strategy and the brand voice work from day one.",
+    type: "single",
+    allowOther: true,
+    options: [
+      { v: "thisWeek", l: "This week" },
+      { v: "nextWeek", l: "Next week" },
+      { v: "twoWeeks", l: "Within two weeks" }
+    ]
+  }
+];
+
+const TOTAL_Q = QUESTIONS.length;
+
+const state = {
+  step: 0,
+  answers: {},
+  others: {},
+  user: { name: CONFIG.clientName, phone: "", email: "" }
+};
+
+const stageEl = document.getElementById("stage");
+const navrowEl = document.getElementById("navrow");
+const backBtn = document.getElementById("backBtn");
+const nextBtn = document.getElementById("nextBtn");
+const progressText = document.getElementById("progressText");
+const progressFill = document.getElementById("progressFill");
+const progressBar = document.getElementById("progressBar");
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function updateProgress() {
+  if (state.step < TOTAL_Q) {
+    const pct = (state.step / TOTAL_Q) * 100;
+    progressFill.style.width = pct + "%";
+    progressText.textContent = (state.step + 1) + " of " + TOTAL_Q;
+    progressBar.style.display = "block";
+  } else if (state.step === TOTAL_Q) {
+    progressFill.style.width = "100%";
+    progressText.textContent = "Last bit";
+    progressBar.style.display = "block";
+  } else {
+    progressBar.style.display = "none";
+    progressText.textContent = "";
+  }
+}
+
+function render() {
+  if (state.step < TOTAL_Q) return renderQuestion(state.step);
+  if (state.step === TOTAL_Q) return renderContact();
+  return renderClosing();
+}
+
+function renderQuestion(idx) {
+  const q = QUESTIONS[idx];
+  navrowEl.style.display = "flex";
+  updateProgress();
+
+  let html = "";
+
+  if (idx === 0) {
+    html += '<div class="greeting">Hey ' + escapeHtml(CONFIG.clientName) + '.</div>';
+  }
+
+  html += '<label class="q-label">' + q.label + '</label>';
+  if (q.help) html += '<div class="q-help">' + q.help + '</div>';
+
+  if (q.type === "text") {
+    const val = escapeHtml(state.answers[q.key] || "");
+    html += '<input class="text-input" type="text" data-key="' + q.key + '" placeholder="' + escapeHtml(q.placeholder || "") + '" value="' + val + '">';
+  } else if (q.type === "textarea") {
+    const val = escapeHtml(state.answers[q.key] || "");
+    html += '<textarea class="text-area" data-key="' + q.key + '" placeholder="' + escapeHtml(q.placeholder || "") + '">' + val + '</textarea>';
+  } else {
+    html += '<div class="opts" data-key="' + q.key + '" data-type="' + q.type + '">';
+    const selected = state.answers[q.key] || (q.type === "multi" ? [] : "");
+
+    q.options.forEach(opt => {
+      const isSel = q.type === "multi" ? selected.indexOf(opt.v) !== -1 : selected === opt.v;
+      html +=
+        '<div class="opt' + (isSel ? ' selected' : '') + '" data-v="' + opt.v + '">' +
+          '<div class="mark"></div>' +
+          '<div class="text">' + opt.l + (opt.sub ? '<span class="sub">' + opt.sub + '</span>' : '') + '</div>' +
+        '</div>';
+    });
+
+    if (q.allowOther) {
+      const otherSel = q.type === "multi" ? selected.indexOf(OTHER) !== -1 : selected === OTHER;
+      html +=
+        '<div class="opt' + (otherSel ? ' selected' : '') + '" data-v="' + OTHER + '">' +
+          '<div class="mark"></div>' +
+          '<div class="text">Something else</div>' +
+        '</div>';
+      const otherVal = escapeHtml(state.others[q.key] || "");
+      const hidden = otherSel ? "" : " hidden";
+      html += '<input class="other-input' + hidden + '" type="text" data-key="' + q.key + '" placeholder="Type your answer here" value="' + otherVal + '">';
+    }
+
+    html += '</div>';
+  }
+
+  stageEl.innerHTML = html;
+  bindQuestion(q);
+  updateNav(q, idx);
+}
+
+function bindQuestion(q) {
+  const textInp = stageEl.querySelector(".text-input");
+  if (textInp) {
+    textInp.addEventListener("input", (e) => {
+      state.answers[q.key] = e.target.value;
+      updateNav(q, state.step);
+    });
+  }
+  const textArea = stageEl.querySelector(".text-area");
+  if (textArea) {
+    textArea.addEventListener("input", (e) => {
+      state.answers[q.key] = e.target.value;
+      updateNav(q, state.step);
+    });
+  }
+  const optsEl = stageEl.querySelector(".opts");
+  if (optsEl) {
+    optsEl.querySelectorAll(".opt").forEach(optEl => {
+      optEl.addEventListener("click", () => {
+        const v = optEl.dataset.v;
+        if (q.type === "single") {
+          state.answers[q.key] = v;
+          optsEl.querySelectorAll(".opt").forEach(o => o.classList.remove("selected"));
+          optEl.classList.add("selected");
+          toggleOther(optsEl, v === OTHER);
+        } else {
+          const cur = state.answers[q.key] ? state.answers[q.key].slice() : [];
+          const i = cur.indexOf(v);
+          if (i >= 0) { cur.splice(i, 1); optEl.classList.remove("selected"); }
+          else        { cur.push(v); optEl.classList.add("selected"); }
+          state.answers[q.key] = cur;
+          toggleOther(optsEl, cur.indexOf(OTHER) !== -1);
+        }
+        updateNav(q, state.step);
+      });
+    });
+    const otherInp = optsEl.querySelector(".other-input");
+    if (otherInp) {
+      otherInp.addEventListener("input", (e) => {
+        state.others[q.key] = e.target.value;
+        updateNav(q, state.step);
+      });
+    }
+  }
+}
+
+function toggleOther(optsEl, show) {
+  const otherInp = optsEl.querySelector(".other-input");
+  if (!otherInp) return;
+  if (show) otherInp.classList.remove("hidden");
+  else      otherInp.classList.add("hidden");
+}
+
+function isAnswered(q) {
+  const a = state.answers[q.key];
+  if (q.type === "text" || q.type === "textarea") return typeof a === "string" && a.trim().length > 0;
+  if (q.type === "single") return !!a;
+  if (q.type === "multi")  return Array.isArray(a) && a.length > 0;
+  return false;
+}
+
+function updateNav(q, idx) {
+  nextBtn.disabled = !isAnswered(q);
+  nextBtn.textContent = "Continue";
+  backBtn.disabled = idx === 0;
+  backBtn.onclick = () => { if (idx === 0) return; state.step--; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  nextBtn.onclick = () => { if (nextBtn.disabled) return; state.step++; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+}
+
+function renderContact() {
+  navrowEl.style.display = "flex";
+  updateProgress();
+  stageEl.innerHTML =
+    '<label class="q-label">Confirm your details</label>' +
+    '<div class="q-help">So we send the next move to the right place.</div>' +
+    '<div class="field"><label>Name</label><input id="fName"  type="text"  value="' + escapeHtml(state.user.name)  + '"/></div>' +
+    '<div class="field"><label>Phone</label><input id="fPhone" type="tel"   placeholder="+91" value="' + escapeHtml(state.user.phone) + '"/></div>' +
+    '<div class="field"><label>Email</label><input id="fEmail" type="email" placeholder="you@brand.com" value="' + escapeHtml(state.user.email) + '"/></div>';
+  nextBtn.disabled = false;
+  nextBtn.textContent = "Send";
+  backBtn.disabled = false;
+  backBtn.onclick = () => { state.step--; render(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  nextBtn.onclick = submit;
+}
+
+function renderClosing() {
+  navrowEl.style.display = "none";
+  updateProgress();
+  stageEl.innerHTML =
+    '<div class="center">' +
+      '<h1>Thanks ' + escapeHtml(state.user.name || CONFIG.clientName) + '.</h1>' +
+      '<p>We will come back to you within 48 hours with the first move for the international play.</p>' +
+    '</div>';
+}
+
+function submit() {
+  const name  = document.getElementById("fName").value.trim()  || CONFIG.clientName;
+  const phone = document.getElementById("fPhone").value.trim();
+  const email = document.getElementById("fEmail").value.trim();
+
+  if (!email) {
+    document.getElementById("fEmail").focus();
+    nextBtn.textContent = "Email needed";
+    setTimeout(() => { nextBtn.textContent = "Send"; }, 1500);
+    return;
+  }
+
+  state.user = { name: name, phone: phone, email: email };
+
+  const questionLabels = {};
+  const questionSections = {};
+  const questionOrder = [];
+  const optionLabels = {};
+
+  QUESTIONS.forEach(q => {
+    questionLabels[q.key]   = q.label;
+    questionSections[q.key] = q.section || "Round 2";
+    questionOrder.push(q.key);
+    if (q.options) {
+      optionLabels[q.key] = {};
+      q.options.forEach(o => { optionLabels[q.key][o.v] = o.l; });
+      optionLabels[q.key][OTHER] = "Something else";
+    }
+  });
+
+  function resolveCode(key, code) {
+    if (code === OTHER) {
+      const t = (state.others[key] || "").trim();
+      return t.length ? t : "Something else";
+    }
+    return (optionLabels[key] && optionLabels[key][code]) || code;
+  }
+
+  const answersText = {};
+  Object.keys(state.answers).forEach(k => {
+    const v = state.answers[k];
+    if (Array.isArray(v)) {
+      answersText[k] = v.map(x => resolveCode(k, x)).join(", ");
+    } else if (typeof v === "string") {
+      answersText[k] = optionLabels[k] ? resolveCode(k, v) : v;
+    }
+  });
+
+  const payload = {
+    formType: "round2",
+    clientName: CONFIG.clientName,
+    submittedAt: new Date().toISOString(),
+    user: state.user,
+    answers: answersText,
+    answersRaw: state.answers,
+    answersOther: state.others,
+    questionLabels: questionLabels,
+    questionSections: questionSections,
+    questionOrder: questionOrder
+  };
+
+  nextBtn.disabled = true;
+  nextBtn.textContent = "Sending";
+
+  fetch(CONFIG.appsScriptUrl, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(payload)
+  })
+  .then(() => { state.step++; render(); window.scrollTo({ top: 0, behavior: "smooth" }); })
+  .catch(() => { nextBtn.textContent = "Try again"; nextBtn.disabled = false; });
+}
+
+render();
+</script>
+</body>
+</html>
